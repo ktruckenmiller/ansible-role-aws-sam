@@ -1,0 +1,13 @@
+---
+runtime: python2.7
+code_dir: code
+region: us-west-2
+s3_bucket: lambda-deploys
+handler: main.lambda_handler
+
+
+# params for sam
+
+default_parameters:
+  Handler: "{{handler}}"
+  Runtime: "{{runtime}}"

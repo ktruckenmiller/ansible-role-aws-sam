@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: A function is triggered off an upload to a bucket. It logs the content type of the uploaded object.
+Parameters:
+  Handler:
+    Type: String
+  Runtime:
+    Type: String
+  S3Location:
+    Type: String
+  BucketListener:
+    Type: String
+  Prefix:
+    Type: String
+
+
+Resources:
+  ProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: !Ref Handler
+      Runtime: !Ref Runtime
+      CodeUri: !Ref S3Location
+      Policies: AmazonS3ReadOnlyAccess
+      Events:
+        EmailArrival:
+          Type: S3
+          Properties:
+            Bucket: !Ref Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+
+  Bucket:
+    Type: AWS::S3::Bucket

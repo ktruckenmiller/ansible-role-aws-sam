@@ -1,0 +1,46 @@
+---
+- file:
+    path: tmp
+    state: directory
+    mode: 0755
+
+- name: build s3 artifact
+  shell: docker pull ktruckenmiller/lambda-packager:python
+
+- name: remove if exists
+  shell: docker rm -f boston
+  ignore_errors: True
+
+- name: create container
+  shell: docker create -it --name boston ktruckenmiller/lambda-packager:python
+  register: container
+
+- name: copy code into container
+  shell: docker cp {{code_dir}}/. boston:/build/
+
+- name: start container
+  shell: docker start boston
+
+- name: wait
+  shell: docker wait boston
+
+- name: copy stuff out of container
+  shell: docker cp boston:/deployment.zip ./tmp
+
+- name: remove container
+  shell: docker rm boston
+
+- name: rename file
+  shell: cp -rf ./tmp/deployment.zip {{zip_file}}
+
+- name: upload s3 artifacts
+  s3:
+    bucket: "{{s3_bucket}}"
+    object: "{{s3_prefix}}/{{zip_sha}}.zip"
+    src: "{{zip_file}}"
+    mode: put
+    overwrite: false
+
+- file:
+    path: tmp
+    state: absent

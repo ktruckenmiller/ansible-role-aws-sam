@@ -1,0 +1,65 @@
+---
+
+  - name: get sum of code dir
+    shell:  tar -cf - ./{{code_dir}} | sha256sum
+    register: sha
+
+  - name: let's gather some facts first...
+    set_fact:
+      zip_sha: "{{sha.stdout | regex_replace('[^a-z0-9]', '')}}"
+
+  - set_fact:
+      s3_prefix: "{{stack_name}}"
+  - set_fact:
+      s3_bucket: "{{ s3_bucket }}"
+      zip_file: "./tmp/{{sha.stdout | regex_replace('[^a-z0-9]', '')}}.zip"
+  - set_fact:
+      s3_full_location: "s3://{{s3_bucket}}/{{s3_prefix}}/{{zip_sha}}.zip"
+      s3_key: "{{s3_prefix}}/{{zip_sha}}.zip"
+
+  - s3:
+      bucket: "{{s3_bucket}}"
+      prefix: "{{s3_prefix}}/{{sha.stdout | regex_replace('[^a-z0-9]', '')}}.zip"
+      mode: list
+    register: s3files
+
+  - debug: var=s3files
+
+  - set_fact:
+      DynamicVars:
+        S3Location: "{{s3_full_location}}"
+
+  - name: combine default Parameters
+    set_fact:
+      final_parameters: "{{ default_parameters | combine(DynamicVars)}}"
+
+  - set_fact:
+      final_parameters: "{{ final_parameters | combine(parameters)}}"
+    when: parameters is defined
+
+
+
+  - include: build_python27.yml
+    when: s3files.s3_keys | length == 0 and runtime == "python2.7"
+
+
+  - set_fact:
+      cloud_formation_params: "{{item.key}}={{item.value}}" | join("-")
+    with_items: final_parameters
+
+  #
+  # - name: create the sam deploy
+  #   shell: >
+  #     aws cloudformation deploy
+  #     --stack-name {{stack_name}}
+  #     --parameter-overrides {{parameters}}
+  #     --template-file {{stack_template}}
+  #     --region {{region}}
+  #     --capabilities CAPABILITY_IAM
+  #   ignore_errors: yes
+  #   register: sam_stack
+  #
+  # - debug: var=sam_stack
+  #
+  # - fail: msg="cfn deploy serverless failed"
+  #   when: '"Failed" in sam_stack.stderr'
