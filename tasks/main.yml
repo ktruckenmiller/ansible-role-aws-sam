@@ -43,9 +43,11 @@
     when: s3files.s3_keys | length == 0 and runtime == "python2.7"
 
 
-  - set_fact:
-      cloud_formation_params: "{{item.key}}={{item.value}}" | join("-")
+  - include: build_parameters.yml
     with_items: final_parameters
+    register: boston
+
+  - debug: var=boston
 
   #
   # - name: create the sam deploy
