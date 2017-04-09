@@ -6,6 +6,6 @@
     cf_template: cert_approver.yml
     parameters:
       BucketListener: email-forwarded
-      Prefix: cert-requests
+      FilterPrefix: cert-requests
   roles:
     - aws-sam

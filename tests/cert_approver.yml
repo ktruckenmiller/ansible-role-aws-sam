@@ -6,11 +6,13 @@ Parameters:
     Type: String
   Runtime:
     Type: String
-  S3Location:
+  S3CodeBucket:
+    Type: String
+  S3CodeKey:
     Type: String
   BucketListener:
     Type: String
-  Prefix:
+  FilterPrefix:
     Type: String
 
 
@@ -20,7 +22,9 @@ Resources:
     Properties:
       Handler: !Ref Handler
       Runtime: !Ref Runtime
-      CodeUri: !Ref S3Location
+      CodeUri:
+        Bucket: !Ref S3CodeBucket
+        Key: !Ref S3CodeKey
       Policies: AmazonS3ReadOnlyAccess
       Events:
         EmailArrival:
@@ -28,8 +32,12 @@ Resources:
           Properties:
             Bucket: !Ref Bucket
             Events: s3:ObjectCreated:*
-            Filter:
-              S3Key:
 
   Bucket:
-    Type: AWS::S3::Bucket
+      Type: AWS::S3::Bucket
+      BucketName: cert-approvals
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteStuff
+            Status: Enabled
+            ExpirationInDays: 30

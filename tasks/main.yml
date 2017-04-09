@@ -27,7 +27,8 @@
 
   - set_fact:
       DynamicVars:
-        S3Location: "{{s3_full_location}}"
+        S3CodeKey: "{{s3_key}}"
+        S3CodeBucket: "{{s3_bucket}}"
 
   - name: combine default Parameters
     set_fact:
@@ -44,24 +45,21 @@
 
 
   - include: build_parameters.yml
-    with_items: final_parameters
-    register: boston
+    with_dict: "{{final_parameters}}"
 
-  - debug: var=boston
 
-  #
-  # - name: create the sam deploy
-  #   shell: >
-  #     aws cloudformation deploy
-  #     --stack-name {{stack_name}}
-  #     --parameter-overrides {{parameters}}
-  #     --template-file {{stack_template}}
-  #     --region {{region}}
-  #     --capabilities CAPABILITY_IAM
-  #   ignore_errors: yes
-  #   register: sam_stack
-  #
-  # - debug: var=sam_stack
-  #
-  # - fail: msg="cfn deploy serverless failed"
-  #   when: '"Failed" in sam_stack.stderr'
+  - name: create the sam deploy
+    shell: >
+      aws cloudformation deploy
+      --stack-name {{stack_name}}
+      --parameter-overrides{{param_string}}
+      --template-file {{cf_template}}
+      --region {{region}}
+      --capabilities CAPABILITY_IAM
+    ignore_errors: yes
+    register: sam_stack
+
+  - debug: var=sam_stack
+
+  - fail: msg="cfn deploy serverless failed"
+    when: '"Failed" in sam_stack.stderr'
